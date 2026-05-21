@@ -99,7 +99,10 @@ def test_run_baseline_evaluates_all_models(monkeypatch) -> None:
 
     monkeypatch.setattr(pipeline, "evaluate_model", fake_evaluate_model)
 
-    result = pipeline.run_baseline(season="2022-23")
+    result = pipeline.run_baseline(
+        season="2022-23",
+        design_matrix_path=Path("snapshot.csv"),
+    )
 
     assert result == [
         {"model": "logistic"},
@@ -108,8 +111,8 @@ def test_run_baseline_evaluates_all_models(monkeypatch) -> None:
         {"model": "lasso"},
     ]
     assert evaluated == [
-        ("logistic", "2022-23", None),
-        ("inference-logistic", "2022-23", None),
-        ("ridge", "2022-23", None),
-        ("lasso", "2022-23", None),
+        ("logistic", "2022-23", Path("snapshot.csv")),
+        ("inference-logistic", "2022-23", Path("snapshot.csv")),
+        ("ridge", "2022-23", Path("snapshot.csv")),
+        ("lasso", "2022-23", Path("snapshot.csv")),
     ]

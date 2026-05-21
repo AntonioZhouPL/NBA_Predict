@@ -1,0 +1,35 @@
+{
+  "season": "2022-23",
+  "cv_folds": 3,
+  "tolerance": 1e-09,
+  "models": {
+    "logistic": {
+      "accuracy": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "confusion_matrix": [[3, 0], [0, 3]],
+      "cumulative_errors": [0, 0, 0]
+    },
+    "inference-logistic": {
+      "accuracy": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "confusion_matrix": [[3, 0], [0, 3]],
+      "cumulative_errors": [0, 0, 0]
+    },
+    "ridge": {
+      "accuracy": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "confusion_matrix": [[3, 0], [0, 3]],
+      "cumulative_errors": [0, 0, 0]
+    },
+    "lasso": {
+      "accuracy": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "confusion_matrix": [[3, 0], [0, 3]],
+      "cumulative_errors": [0, 0, 0]
+    }
+  }
+}

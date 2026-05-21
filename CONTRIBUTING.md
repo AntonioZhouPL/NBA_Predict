@@ -75,3 +75,9 @@ nba-predict prepare-data \
 
 nba-predict run-baseline --season 2022-23 --cv-folds 3
 ```
+
+For reproducibility-sensitive changes, also verify the frozen offline path:
+
+```bash
+make reproduce
+```

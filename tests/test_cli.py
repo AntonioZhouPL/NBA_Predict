@@ -99,15 +99,25 @@ def test_main_dispatches_run_baseline(monkeypatch, capsys) -> None:
         def __init__(self, cv_folds: int) -> None:
             assert cv_folds == 4
 
-        def run_baseline(self, season: str):
+        def run_baseline(self, season: str, design_matrix_path):
             assert season == "2022-23"
+            assert design_matrix_path == Path("snapshot.csv")
             return [{"model": "logistic"}]
 
     monkeypatch.setattr(cli, "NBAPredictionPipeline", FakePipeline)
     monkeypatch.setattr(
         sys,
         "argv",
-        ["nba-predict", "run-baseline", "--season", "2022-23", "--cv-folds", "4"],
+        [
+            "nba-predict",
+            "run-baseline",
+            "--season",
+            "2022-23",
+            "--design-matrix",
+            "snapshot.csv",
+            "--cv-folds",
+            "4",
+        ],
     )
 
     cli.main()

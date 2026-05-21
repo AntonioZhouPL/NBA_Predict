@@ -103,6 +103,13 @@ make install-dev
 make check
 ```
 
+For the pinned reproducibility environment:
+
+```bash
+python -m pip install -r requirements-lock.txt
+python -m pip install -e . --no-deps
+```
+
 For tools that expect a traditional requirements file, install the same runtime,
 data, test, and lint dependencies with:
 
@@ -184,6 +191,17 @@ nba-predict run-baseline --season 2022-23 --cv-folds 3
 make baseline SEASON=2022-23 CV_FOLDS=3
 ```
 
+Run the deterministic offline reproduction check from the frozen snapshot:
+
+```bash
+nba-predict run-baseline \
+  --season 2022-23 \
+  --design-matrix data/reproducibility/design_matrix_snapshot.csv \
+  --cv-folds 3
+
+make reproduce
+```
+
 Available translated baseline models:
 
 - `logistic`: regular logistic regression with the full feature set.
@@ -211,6 +229,21 @@ The current Python pipeline was verified on the 2022-23 season after downloading
 
 These metrics are generated under `outputs/metrics/` when the baseline command
 is run.
+
+## Deterministic Reproduction
+
+The live `download-data` step depends on `nba_api`, so it is not treated as the
+deterministic execution path. The fixed reproducibility path for this project is:
+
+1. install the pinned dependencies from [`requirements-lock.txt`](requirements-lock.txt);
+2. run the baseline models against the frozen snapshot
+   [`data/reproducibility/design_matrix_snapshot.csv`](data/reproducibility/design_matrix_snapshot.csv);
+3. verify the generated metrics against
+   [`data/reproducibility/expected_metrics.json`](data/reproducibility/expected_metrics.json)
+   using `make reproduce`.
+
+This keeps the course-project reproduction check stable even if the upstream
+NBA API changes over time.
 
 ## Demonstration Notebook
 
