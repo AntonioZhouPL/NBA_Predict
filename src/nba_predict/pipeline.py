@@ -100,11 +100,19 @@ class NBAPredictionPipeline:
             "predictions_path": str(predictions_path),
         }
 
-    def run_baseline(self, season: str = DEFAULT_SEASON) -> list[dict[str, object]]:
+    def run_baseline(
+        self,
+        season: str = DEFAULT_SEASON,
+        design_matrix_path: str | Path | None = None,
+    ) -> list[dict[str, object]]:
         """Run the baseline set of translated logistic models."""
 
         return [
-            self.evaluate_model(model_name, season=season)
+            self.evaluate_model(
+                model_name,
+                season=season,
+                design_matrix_path=design_matrix_path,
+            )
             for model_name in ["logistic", "inference-logistic", "ridge", "lasso"]
         ]
 

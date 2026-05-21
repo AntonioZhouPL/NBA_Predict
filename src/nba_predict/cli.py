@@ -53,6 +53,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="Evaluate all baseline models.",
     )
     baseline.add_argument("--season", default=DEFAULT_SEASON)
+    baseline.add_argument("--design-matrix", type=Path, default=None)
     baseline.add_argument("--cv-folds", type=int, default=DEFAULT_CV_FOLDS)
     return parser
 
@@ -86,7 +87,10 @@ def main() -> None:
         )
         print(json.dumps(result, indent=2))
     elif args.command == "run-baseline":
-        result = pipeline.run_baseline(season=args.season)
+        result = pipeline.run_baseline(
+            season=args.season,
+            design_matrix_path=args.design_matrix,
+        )
         print(json.dumps(result, indent=2))
 
 
