@@ -116,6 +116,12 @@ Check code style:
 python -m ruff check src
 ```
 
+Run the automated tests:
+
+```bash
+python -m pytest
+```
+
 Check Python syntax:
 
 ```bash

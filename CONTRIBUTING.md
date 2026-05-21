@@ -59,6 +59,7 @@ Before opening a pull request, run the checks relevant to your change:
 
 ```bash
 python -m ruff check src
+python -m pytest
 python -m compileall src
 ```
 
@@ -76,4 +77,3 @@ nba-predict prepare-data \
 
 nba-predict run-baseline --season 2022-23 --cv-folds 3
 ```
-
