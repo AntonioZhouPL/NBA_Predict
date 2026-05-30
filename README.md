@@ -116,16 +116,16 @@ and a pinned Quarto CLI.
 Build locally from a clean checkout:
 
 ```bash
-docker build -t cliprob/nba-predict:latest .
-docker run --rm cliprob/nba-predict:latest make reproduce
+docker build -t airmazurczak/nba-predict:latest .
+docker run --rm airmazurczak/nba-predict:latest make reproduce
 ```
 
 After the image has been published to DockerHub, a reviewer can pull it instead
 of building it:
 
 ```bash
-docker pull cliprob/nba-predict:latest
-docker run --rm cliprob/nba-predict:latest make reproduce
+docker pull airmazurczak/nba-predict:latest
+docker run --rm airmazurczak/nba-predict:latest make reproduce
 ```
 
 Generate the Quarto report while writing outputs back to the checked-out
@@ -134,13 +134,13 @@ repository.
 macOS/Linux shells:
 
 ```bash
-docker run --rm -v "$(pwd)":/app cliprob/nba-predict:latest make report
+docker run --rm -v "$(pwd)":/app airmazurczak/nba-predict:latest make report
 ```
 
 Windows PowerShell:
 
 ```powershell
-docker run --rm -v ${PWD}:/app cliprob/nba-predict:latest make report
+docker run --rm -v ${PWD}:/app airmazurczak/nba-predict:latest make report
 ```
 
 Docker Compose provides the same runtime configuration:
@@ -155,7 +155,7 @@ Publish the multi-platform DockerHub image after logging in:
 ```bash
 docker login
 docker buildx build --platform linux/amd64,linux/arm64 \
-  -t cliprob/nba-predict:latest \
+  -t airmazurczak/nba-predict:latest \
   --push .
 ```
 
