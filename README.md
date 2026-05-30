@@ -12,6 +12,9 @@ The canonical runtime is Python 3.11. For cross-platform reproduction, use the
 Docker workflow below; it avoids relying on a collaborator's local Python,
 operating system, or Make installation.
 
+The repository includes a `.python-version` file for local version managers,
+but Docker remains the canonical environment for final reproduction checks.
+
 ## Current Execution Path
 
 The active pipeline is not run from the legacy R Markdown files. Use the Python
@@ -110,8 +113,10 @@ make check
 ## Reproduce on Any Machine
 
 The Docker image is the preferred way to reproduce the project on Windows,
-macOS, and Linux. It uses Python 3.11, pinned Python dependencies, GNU Make,
-and a pinned Quarto CLI.
+macOS, and Linux. It uses a pinned Python 3.11 slim-bookworm base-image digest,
+pinned Python dependencies, GNU Make, and Quarto CLI 1.9.38. The Docker build
+verifies the downloaded Quarto package against the release checksum file before
+installing it.
 
 Build locally from a clean checkout:
 
@@ -121,11 +126,15 @@ docker run --rm airmazurczak/nba-predict:latest make reproduce
 ```
 
 After the image has been published to DockerHub, a reviewer can pull it instead
-of building it:
+of building it. For strict reproduction, prefer the immutable image digest from
+the release notes over the mutable `latest` tag:
 
 ```bash
 docker pull airmazurczak/nba-predict:latest
 docker run --rm airmazurczak/nba-predict:latest make reproduce
+
+# Stricter after publication:
+docker run --rm airmazurczak/nba-predict@sha256:<published-digest> make reproduce
 ```
 
 Generate the Quarto report while writing outputs back to the checked-out
@@ -144,11 +153,19 @@ docker run --rm -v ${PWD}:/app airmazurczak/nba-predict:latest make report
 start .\report\_site\report\report.html
 ```
 
-Docker Compose provides the same runtime configuration:
+Docker Compose provides the same runtime configuration without mounting the
+local working tree:
 
 ```bash
 docker compose run --rm nba-predict make reproduce
 docker compose run --rm nba-predict make report
+```
+
+For development, use the profiled Compose service that mounts the repository
+into the container:
+
+```bash
+docker compose --profile dev run --rm nba-predict-dev make reproduce
 ```
 
 Publish the multi-platform DockerHub image after logging in:
@@ -320,9 +337,11 @@ The live `download-data` step depends on `nba_api`, so it is not treated as the
 deterministic execution path. The fixed reproducibility path for this project is:
 
 1. install the pinned dependencies from [`requirements-lock.txt`](requirements-lock.txt);
-2. run the baseline models against the frozen snapshot
+2. verify the artifact hashes and CSV shape in
+   [`data/reproducibility/MANIFEST.json`](data/reproducibility/MANIFEST.json);
+3. run the baseline models against the frozen snapshot
    [`data/reproducibility/design_matrix_snapshot.csv`](data/reproducibility/design_matrix_snapshot.csv);
-3. verify the generated metrics against
+4. verify the generated metrics against
    [`data/reproducibility/expected_metrics.json`](data/reproducibility/expected_metrics.json)
    using `make reproduce`.
 

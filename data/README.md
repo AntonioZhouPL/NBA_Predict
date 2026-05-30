@@ -32,6 +32,7 @@ data/processed/design_matrix.csv
 ```
 
 Raw and processed CSV files are ignored by Git so the repository stays small.
-For final presentation reproducibility, the team should either freeze the exact
-CSV used in a release artifact or build the Docker image with the selected data
-already available.
+The deterministic offline check uses the committed snapshot and manifest in
+`data/reproducibility/`. For live-data reproduction, freeze the exact CSV files
+in a release artifact or build the Docker image with the selected data already
+available.

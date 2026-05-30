@@ -36,9 +36,9 @@ docker run --rm airmazurczak/nba-predict:latest make reproduce
 ```
 
 The `make reproduce` target is intentionally small and deterministic. It uses a
-frozen snapshot from `data/reproducibility/`, prepares the design matrix, runs
-the baseline models, and checks that the expected metrics can be regenerated
-without downloading fresh data from the NBA API.
+frozen snapshot from `data/reproducibility/`, verifies the artifact manifest,
+runs the baseline models, and checks that the expected metrics can be
+regenerated without downloading fresh data from the NBA API.
 
 To render this report from the same containerized environment:
 
@@ -93,6 +93,9 @@ The most important research-engineering decisions are:
 - Python is pinned to the stable 3.11 runtime.
 - Dependencies are installed from `requirements-lock.txt`.
 - Docker defines the operating-system level environment.
+- Quarto CLI 1.9.38 is installed with release checksum verification.
+- `data/reproducibility/MANIFEST.json` records SHA256 hashes and CSV shape for
+  deterministic reproduction artifacts.
 - The Makefile exposes the same workflow as repeatable commands.
 - GitHub Actions checks the Python package across operating systems.
 - Quarto turns generated metrics into a final human-readable report.
