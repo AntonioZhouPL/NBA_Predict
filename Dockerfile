@@ -1,7 +1,7 @@
 FROM python:3.11-slim
 
 ARG QUARTO_VERSION=1.7.32
-ARG TARGETARCH=amd64
+ARG TARGETARCH
 
 ENV PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
@@ -17,10 +17,11 @@ RUN apt-get update \
         make \
     && rm -rf /var/lib/apt/lists/*
 
-RUN case "${TARGETARCH}" in \
+RUN docker_arch="${TARGETARCH:-$(dpkg --print-architecture)}" \
+    && case "${docker_arch}" in \
         amd64) quarto_arch="amd64" ;; \
         arm64) quarto_arch="arm64" ;; \
-        *) echo "Unsupported Docker architecture: ${TARGETARCH}" >&2; exit 1 ;; \
+        *) echo "Unsupported Docker architecture: ${docker_arch}" >&2; exit 1 ;; \
     esac \
     && curl -fsSL \
         "https://github.com/quarto-dev/quarto-cli/releases/download/v${QUARTO_VERSION}/quarto-${QUARTO_VERSION}-linux-${quarto_arch}.deb" \
