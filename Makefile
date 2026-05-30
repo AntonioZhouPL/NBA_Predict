@@ -22,6 +22,8 @@ NEW_RAW ?= data/raw/2012_2026_Data.csv
 NEW_DESIGN_MATRIX ?= data/processed/design_matrix_2012_2026.csv
 DOCKER_IMAGE ?= airmazurczak/nba-predict:latest
 REPORT_SUMMARY ?= report/generated/metrics_summary.md
+REPORT_BUILD_DIR ?= /tmp/nba-predict-report
+REPORT_OUTPUT_DIR ?= $(CURDIR)/report/_site/report
 
 install-dev:
 	test -d $(VENV) || python3 -m venv $(VENV)
@@ -94,7 +96,11 @@ report:
 	$(PYTHON) -m nba_predict.reporting \
 		--metrics-dir outputs/metrics \
 		--output $(REPORT_SUMMARY)
-	$(QUARTO) render report/report.qmd
+	rm -rf "$(REPORT_BUILD_DIR)"
+	mkdir -p "$(REPORT_BUILD_DIR)/generated"
+	cp report/report.qmd "$(REPORT_BUILD_DIR)/report.qmd"
+	cp -R report/generated/. "$(REPORT_BUILD_DIR)/generated/"
+	cd "$(REPORT_BUILD_DIR)" && $(QUARTO) render report.qmd --output-dir "$(REPORT_OUTPUT_DIR)"
 
 docker-build:
 	docker build -t $(DOCKER_IMAGE) .
