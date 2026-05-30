@@ -1,0 +1,8 @@
+services:
+  nba-predict:
+    build: .
+    image: cliprob/nba-predict:latest
+    working_dir: /app
+    volumes:
+      - .:/app
+    command: make reproduce

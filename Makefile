@@ -1,4 +1,4 @@
-.PHONY: install-dev lint test check download-data prepare-data evaluate baseline reproduce clean
+.PHONY: install-dev lint test check download-data prepare-data evaluate baseline data-2025-26 prepare-2025-26 baseline-2025-26 reproduce docker-build docker-reproduce clean
 
 VENV ?= .venv
 PYTHON ?= $(VENV)/bin/python
@@ -14,6 +14,11 @@ REPRO_DESIGN_MATRIX ?= data/reproducibility/design_matrix_snapshot.csv
 REPRO_EXPECTED ?= data/reproducibility/expected_metrics.json
 REPRO_REQUIREMENTS ?= requirements-lock.txt
 REPRO_TOLERANCE ?= 1e-9
+NEW_SEASON ?= 2025-26
+NEW_SEASON_END ?= 2026
+NEW_RAW ?= data/raw/2012_2026_Data.csv
+NEW_DESIGN_MATRIX ?= data/processed/design_matrix_2012_2026.csv
+DOCKER_IMAGE ?= cliprob/nba-predict:latest
 
 install-dev:
 	test -d $(VENV) || python3 -m venv $(VENV)
@@ -55,6 +60,21 @@ baseline:
 		--design-matrix $(DESIGN_MATRIX) \
 		--cv-folds $(CV_FOLDS)
 
+data-2025-26:
+	$(MAKE) download-data \
+		SEASON_END=$(NEW_SEASON_END) \
+		RAW=$(NEW_RAW)
+
+prepare-2025-26:
+	$(MAKE) prepare-data \
+		RAW=$(NEW_RAW) \
+		DESIGN_MATRIX=$(NEW_DESIGN_MATRIX)
+
+baseline-2025-26:
+	$(MAKE) baseline \
+		SEASON=$(NEW_SEASON) \
+		DESIGN_MATRIX=$(NEW_DESIGN_MATRIX)
+
 reproduce:
 	$(MAKE) baseline \
 		SEASON=$(SEASON) \
@@ -65,6 +85,12 @@ reproduce:
 		--metrics-dir outputs/metrics \
 		--season $(SEASON) \
 		--tolerance $(REPRO_TOLERANCE)
+
+docker-build:
+	docker build -t $(DOCKER_IMAGE) .
+
+docker-reproduce:
+	docker run --rm $(DOCKER_IMAGE) make reproduce
 
 clean:
 	rm -rf .pytest_cache .ruff_cache build dist
