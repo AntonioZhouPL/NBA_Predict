@@ -17,7 +17,50 @@ pipeline still performs on newer NBA regular-season data.
 The active implementation is under `src/nba_predict`. The original R Markdown
 files are preserved in `legacy/` to keep the reproduction traceable.
 
+## Presentation Route
+
+For the course presentation, the main section to show is
+`Reproducible Workflow`. It demonstrates the Docker-first execution path, the
+Makefile automation, and the deterministic smoke test. The later
+`Machine Learning Deep Dive` section explains the model in more detail, but it
+is supporting context rather than the main reproducible-research claim.
+
 ## Reproducible Workflow
+
+The repository is designed so the same workflow can run on Windows, macOS, and
+Linux. The canonical path is Docker, using the published image:
+
+```bash
+docker pull airmazurczak/nba-predict:latest
+docker run --rm airmazurczak/nba-predict:latest make reproduce
+```
+
+The `make reproduce` target is intentionally small and deterministic. It uses a
+frozen snapshot from `data/reproducibility/`, prepares the design matrix, runs
+the baseline models, and checks that the expected metrics can be regenerated
+without downloading fresh data from the NBA API.
+
+To render this report from the same containerized environment:
+
+```bash
+docker run --rm -v ${PWD}:/app airmazurczak/nba-predict:latest make report
+```
+
+The full live-data extension for the 2025-26 season is kept separate because it
+depends on the external NBA API:
+
+```bash
+make data-2025-26
+make prepare-2025-26
+make baseline-2025-26
+make report
+```
+
+This split matters. The deterministic path proves that the code, environment,
+tests, and report machinery are reproducible. The live-data path shows how the
+same pipeline can be rerun when new NBA data are available.
+
+## Repository Pipeline
 
 The pipeline is organized around explicit Python classes:
 
@@ -27,28 +70,61 @@ The pipeline is organized around explicit Python classes:
 - `RollingSeasonEvaluator` evaluates models by refitting before each game day.
 - `NBAPredictionPipeline` connects download, preparation, and evaluation steps.
 
-The deterministic offline smoke test uses the frozen snapshot in
-`data/reproducibility/`:
+At a high level, the workflow is:
 
-```bash
-make reproduce
-```
+- download raw NBA team game logs;
+- convert them into one row per game from the home-team perspective;
+- compute rolling-form features for both teams;
+- fit logistic-regression baselines;
+- evaluate predictions day by day;
+- write metrics and predictions for the Quarto report.
 
-The full 2025-26 extension can be regenerated with:
+## Why This Is A Reproducibility Project
 
-```bash
-make data-2025-26
-make prepare-2025-26
-make baseline-2025-26
-make report
-```
+The goal is not to invent a new NBA prediction method. The original project
+already defined a modeling idea in R Markdown. This repository focuses on
+making that empirical workflow reproducible: preserving the legacy files,
+translating the workflow to Python classes, adding tests, automating execution
+with Makefile targets, freezing a deterministic smoke-test path, containerizing
+the runtime with Docker, and rendering a final Quarto report.
 
-## How The Prediction Model Works
+The most important research-engineering decisions are:
+
+- Python is pinned to the stable 3.11 runtime.
+- Dependencies are installed from `requirements-lock.txt`.
+- Docker defines the operating-system level environment.
+- The Makefile exposes the same workflow as repeatable commands.
+- GitHub Actions checks the Python package across operating systems.
+- Quarto turns generated metrics into a final human-readable report.
+
+## Data and Results
+
+{{< include generated/metrics_summary.md >}}
+
+## Machine Learning Deep Dive
 
 The machine learning task is binary classification. Each row in the design
 matrix represents one NBA regular-season game from the home team's perspective.
 The target variable is `outcomeGame`: it is `1` when the home team won and `0`
 when the home team lost.
+
+### Unit Of Observation And Target
+
+The raw NBA API data are team game logs, so a single real NBA game appears from
+the perspective of each participating team. The preprocessing step converts
+those logs into one modeling row per scheduled game. That row is oriented around
+the home team:
+
+- the home team is the positive class reference;
+- the away team is the comparison team;
+- the target is whether the home team won;
+- the model output is interpreted as home-team win probability.
+
+This framing keeps the prediction problem consistent across seasons. A value of
+`0.62`, for example, means the model estimates a 62% probability that the home
+team wins that game, given the features available before the game is played.
+
+### Feature Engineering
 
 The model does not use team names as direct labels. Instead, it compares recent
 team form. Most input features are home-team metrics minus away-team metrics,
@@ -58,6 +134,23 @@ offensive and defensive ratings, `avg_true_s` compares true shooting, and
 `isB2BSecond` captures whether the home team is on the second night of a
 back-to-back relative to the away team.
 
+This design is important because it asks a general question: based on recent
+form, rest, and efficiency, is the home team stronger than the away team today?
+The model is not memorizing that a particular franchise is usually strong. It is
+learning how differences in recent basketball performance relate to the chance
+of a home win.
+
+The main preprocessing idea can be summarized as:
+
+```text
+home rolling metric - away rolling metric = model feature
+```
+
+Positive values usually mean the home team has been better recently on that
+dimension. Negative values usually mean the away team has been better.
+
+### Models
+
 The translated baseline models are logistic-regression classifiers:
 
 - regular logistic regression estimates the probability that the home team wins;
@@ -66,23 +159,73 @@ The translated baseline models are logistic-regression classifiers:
 - lasso logistic regression adds L1 regularization, which can push weaker
   feature coefficients toward zero.
 
+All three models are intentionally simple. That is useful for reproducible
+research because the coefficients, input data, and evaluation procedure are
+easier to inspect than a large black-box model. The output is a probability, and
+the predicted class is derived from that probability:
+
+```text
+probability >= 0.5 -> predict home win
+probability < 0.5  -> predict home loss
+```
+
+### Rolling Evaluation
+
 Evaluation is rolling through the target season. Before each game day, the model
 is refit using only games that happened earlier. It then predicts that day's
 games. This matters for reproducibility and research validity because it avoids
 using future information when evaluating past predictions.
 
-## Why This Is A Reproducibility Project
+The rolling setup is stricter than fitting once on the whole season because the
+model never gets to learn from games that had not happened yet. Conceptually,
+each prediction follows this order:
 
-The goal is not to invent a new NBA prediction method. The original project
-already defined a modeling idea in R Markdown. This repository focuses on making
-that empirical workflow reproducible: preserving the legacy files, translating
-the workflow to Python classes, adding tests, automating execution with
-Makefile targets, freezing a deterministic smoke-test path, containerizing the
-runtime with Docker, and rendering a final Quarto report.
+1. collect all games before the current game date;
+2. fit the selected logistic-regression model on that historical data;
+3. transform the current day's games into the same feature format;
+4. predict home-win probabilities for those games;
+5. compare predicted outcomes with the actual results after the games.
 
-## Data and Results
+### How A Prediction Is Produced
 
-{{< include generated/metrics_summary.md >}}
+A single prediction therefore moves through the repository like this:
+
+```text
+NBA team logs
+  -> NBADataPreprocessor
+  -> one home-team game row
+  -> rolling home-away feature differences
+  -> LogisticGamePredictor
+  -> home-win probability
+  -> predicted class and evaluation metrics
+```
+
+The resulting metrics are written to `outputs/metrics/`. Prediction-level
+artifacts are written to `outputs/predictions/` when the full workflow is run.
+The Quarto report reads the generated metrics summary so that the report is
+connected to executable outputs rather than hand-entered numbers.
+
+### Metrics And Interpretation
+
+The report compares the reproduced original-style setting with the newer
+2025-26 extension. Accuracy is the easiest number to explain: it is the share of
+games where the predicted winner matches the actual winner. The model also
+produces probabilities, so probability-sensitive metrics can be inspected from
+the generated JSON outputs when needed.
+
+The key interpretation is not "this is the best possible NBA model." The key
+interpretation is whether a previously written empirical workflow can be
+translated, rerun, tested, containerized, and extended to newer data in a way
+that another person can reproduce.
+
+### Limitations
+
+The model uses recent team-level form and does not include many factors that
+would matter in a production sports prediction system, such as player-level
+injuries, betting market information, late roster changes, travel details, or
+lineup-specific matchups. Those omissions are acceptable for this project
+because the course objective is reproducible research, not state-of-the-art NBA
+forecasting.
 
 ## Interpretation
 
