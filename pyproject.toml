@@ -21,8 +21,10 @@ data = [
     "nba_api==1.11.4",
 ]
 dev = [
+    "pre-commit>=4.6",
     "pytest>=8.0",
     "ruff>=0.4",
+    "sphinx>=8.0",
 ]
 
 [project.scripts]

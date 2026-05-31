@@ -18,4 +18,3 @@ The active reproducible project pipeline is now implemented in Python under
 
 Use this directory only as a reference for the original implementation and model
 description.
-

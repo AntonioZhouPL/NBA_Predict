@@ -61,6 +61,9 @@ src/nba_predict/
 notebooks/
   demo_pipeline.ipynb
 
+docs/
+  Sphinx source files for package API documentation
+
 data/
   raw/           generated raw game log CSV files
   processed/     generated design matrix CSV files
@@ -85,9 +88,9 @@ legacy/
 | Python classes | The refactor uses classes including `NBAStatsDownloader`, `NBADataPreprocessor`, `LogisticGamePredictor`, `RollingSeasonEvaluator`, and `NBAPredictionPipeline`. | Done |
 | Core code outside notebooks | The production path is implemented in Python scripts under `src/nba_predict`; the notebook is only a demonstration. | Done |
 | Docstrings | Public classes and methods in the Python package include docstrings. | Done |
-| Linting settings | Ruff configuration is stored in [`pyproject.toml`](pyproject.toml). Run `python -m ruff check src`. Pre-commit hook setup is tracked in issue [#15](https://github.com/AntonioZhouPL/NBA_Predict/issues/15). | Partially done |
+| Linting settings | Ruff configuration is stored in [`pyproject.toml`](pyproject.toml), pre-commit hooks are configured in [`.pre-commit-config.yaml`](.pre-commit-config.yaml), and both are covered by the pinned development dependencies. | Done |
 | Tests | Pytest coverage is stored under [`tests/`](tests/) and is run by GitHub Actions. | Done |
-| Sphinx documentation | Sphinx HTML documentation is tracked in issue [#15](https://github.com/AntonioZhouPL/NBA_Predict/issues/15). | Pending |
+| Sphinx documentation | Sphinx source files live in [`docs/`](docs/) and HTML documentation is generated with `make docs`. | Done |
 | Demonstration notebook | [`notebooks/demo_pipeline.ipynb`](notebooks/demo_pipeline.ipynb) demonstrates the package workflow. | Done |
 | Final report | The Quarto report is defined in [`report/report.qmd`](report/report.qmd) and generated with `make report`. | Done, owner: Robert |
 | Reproducible data pipeline | Python data download and design matrix generation are implemented through `nba-predict download-data` and `nba-predict prepare-data`. Updated data work is tracked in issues [#1](https://github.com/AntonioZhouPL/NBA_Predict/issues/1) and [#2](https://github.com/AntonioZhouPL/NBA_Predict/issues/2). | Partially done |
@@ -227,12 +230,20 @@ Run the standard local verification bundle:
 make check
 ```
 
-Install and run pre-commit hooks locally:
+Build the Sphinx HTML documentation:
 
 ```bash
-python -m pip install pre-commit
-pre-commit install
-pre-commit run --all-files
+make docs
+```
+
+The generated documentation is written to `docs/_build/html/index.html`.
+
+Install and run pre-commit hooks locally after installing the development
+environment:
+
+```bash
+python -m pre_commit install
+python -m pre_commit run --all-files
 ```
 
 ## Data Reproduction

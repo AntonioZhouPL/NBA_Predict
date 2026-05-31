@@ -1,4 +1,4 @@
-.PHONY: install-dev lint test check download-data prepare-data evaluate baseline data-2025-26 prepare-2025-26 baseline-2025-26 reproduce report docker-build docker-reproduce clean
+.PHONY: install-dev lint test docs check download-data prepare-data evaluate baseline data-2025-26 prepare-2025-26 baseline-2025-26 reproduce report docker-build docker-reproduce clean
 
 VENV ?= .venv
 PYTHON ?= $(VENV)/bin/python
@@ -24,6 +24,8 @@ DOCKER_IMAGE ?= airmazurczak/nba-predict:latest
 REPORT_SUMMARY ?= report/generated/metrics_summary.md
 REPORT_BUILD_DIR ?= /tmp/nba-predict-report
 REPORT_OUTPUT_DIR ?= $(CURDIR)/report/_site/report
+DOCS_SOURCE ?= docs
+DOCS_OUTPUT ?= docs/_build/html
 
 install-dev:
 	test -d $(VENV) || python3 -m venv $(VENV)
@@ -36,10 +38,14 @@ lint:
 test:
 	$(PYTHON) -m pytest
 
+docs:
+	$(PYTHON) -m sphinx -b html $(DOCS_SOURCE) $(DOCS_OUTPUT)
+
 check:
 	$(PYTHON) -m compileall src
 	$(MAKE) test
 	$(MAKE) lint
+	$(MAKE) docs
 
 download-data:
 	$(NBA_PREDICT) download-data \
@@ -109,5 +115,5 @@ docker-reproduce:
 	docker run --rm $(DOCKER_IMAGE) make reproduce
 
 clean:
-	rm -rf .pytest_cache .ruff_cache build dist
+	rm -rf .pytest_cache .ruff_cache build dist docs/_build
 	find src tests -type d -name "__pycache__" -prune -exec rm -rf {} +

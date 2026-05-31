@@ -38,9 +38,9 @@ library(randomForest)
 # Convert outcomeGame to factor or binary variable
 train_design_matrix$outcomeGame <- as.factor(train_design_matrix$outcomeGame)
 
-rf_model <- randomForest(outcomeGame ~ isB2BSecond + avg_treb + avg_stl + avg_blk + avg_tov + 
-                     avg_orate + avg_drate + avg_true_s + avg_win_perc, 
-                   data = train_design_matrix) 
+rf_model <- randomForest(outcomeGame ~ isB2BSecond + avg_treb + avg_stl + avg_blk + avg_tov +
+                     avg_orate + avg_drate + avg_true_s + avg_win_perc,
+                   data = train_design_matrix)
 
 rf_predictions <- predict(rf_model, x_test)
 
@@ -58,8 +58,8 @@ cat("Random Forest Accuracy: ", accuracy_rf)
 # random forest model
 set.seed(254)
 library(randomForest)
-rf_model <- randomForest(outcomeGame ~ isB2BSecond + avg_win_perc, 
-                   data = train_design_matrix) 
+rf_model <- randomForest(outcomeGame ~ isB2BSecond + avg_win_perc,
+                   data = train_design_matrix)
 
 rf_predictions <- predict(rf_model, x_test)
 
@@ -79,14 +79,14 @@ library(xgboost)
 
 train_data <- train_design_matrix %>%
   select(-slugSeason, -dateGame)
-  
+
 
 test_data <- test_design_matrix %>%
   select(-slugSeason, -dateGame)
 
 # Convert the data to a suitable format for xgboost
-train_matrix <- xgb.DMatrix(data = as.matrix(train_data[, -which(names(train_data) 
-                                                                 == "outcomeGame")]), 
+train_matrix <- xgb.DMatrix(data = as.matrix(train_data[, -which(names(train_data)
+                                                                 == "outcomeGame")]),
                             label = train_data$outcomeGame)
 test_matrix <- xgb.DMatrix(data = as.matrix(test_data[, -which(names(test_data)
                                                                == "outcomeGame")]),
@@ -94,7 +94,7 @@ test_matrix <- xgb.DMatrix(data = as.matrix(test_data[, -which(names(test_data)
 
 # set params for xgboost model
 params <- list(
-  objective = "binary:logistic", 
+  objective = "binary:logistic",
   eval_metric = "error",
   max_depth = 6,
   eta = 0.3,
@@ -137,7 +137,7 @@ test_data$outcomeGame <- as.factor(test_data$outcomeGame)
 
 train_control <- trainControl(method="repeatedcv", number=10, repeats=3)
 
-nb_model <- train(outcomeGame~., data=train_data, trControl=train_control, 
+nb_model <- train(outcomeGame~., data=train_data, trControl=train_control,
                   method="naive_bayes")
 
 nb_predictions <- nb_model %>% predict(test_data[,-2])
@@ -157,12 +157,12 @@ cl <- makeCluster(detectCores() - 2)
 registerDoParallel(cl)
 
 # Define the parameter grid for the SVM model
-parameter_grid <- expand.grid(gamma = 10^seq(-5,5, length.out = 20), 
+parameter_grid <- expand.grid(gamma = 10^seq(-5,5, length.out = 20),
                               cost = 10^seq(-5,5, length.out = 20))
 
 # run tune.svm in parallel
 svm_results_radial <- foreach(i = 1:nrow(parameter_grid), .packages = c("e1071")) %dopar% {
-  tune.svm(outcomeGame ~ ., data = train_data, kernel = "radial", gamma = parameter_grid[i,"gamma"], 
+  tune.svm(outcomeGame ~ ., data = train_data, kernel = "radial", gamma = parameter_grid[i,"gamma"],
            cost = parameter_grid[i,"cost"], metric = 'accuracy',
            tunecontrol = tune.control(cross = 10))
 }
@@ -224,4 +224,3 @@ print(accuracy_df)
 
 stargazer(accuracy_df, type = "latex", title = "Model Accuracies", label = "tab:table1", summary = FALSE, digits = 5)
 ```
-

@@ -19,7 +19,7 @@ seasons <- seq(2013, 2023)
 # Access the game tables for a particular season
 gamedata <- game_logs(seasons = seasons)
 
-# 
+#
 wd <- paste0(getwd(), "/data")
 write.csv(x = gamedata, file = paste0(wd,"/2012_2023_Data.csv"), row.names = FALSE)
 ```
@@ -48,8 +48,8 @@ gamelogs <- read.csv("./data/2012_2023_Data.csv")
 
 # let's select for columns to make the data more manageable
 team_summary <- gamelogs %>%
-  select(slugSeason, dateGame, idGame, nameTeam, isB2BSecond, 
-         locationGame, slugMatchup, outcomeGame, blk, tov, pf, pts, stl, treb, 
+  select(slugSeason, dateGame, idGame, nameTeam, isB2BSecond,
+         locationGame, slugMatchup, outcomeGame, blk, tov, pf, pts, stl, treb,
          oreb, dreb, fga, fgm, ftm, fta) %>%
   arrange(idGame, nameTeam, locationGame)
 
@@ -57,12 +57,12 @@ team_summary <- gamelogs %>%
 # need to calculate team stats first.
 team_summary <- team_summary %>%
   group_by(idGame, nameTeam) %>%
-  summarize(slugSeason = first(slugSeason), dateGame = first(dateGame), 
-            idGame = first(idGame), nameTeam = first(nameTeam), 
+  summarize(slugSeason = first(slugSeason), dateGame = first(dateGame),
+            idGame = first(idGame), nameTeam = first(nameTeam),
             isB2BSecond = first(isB2BSecond), locationGame = first(locationGame),
-            slugMatchup = first(slugMatchup),outcomeGame = first(outcomeGame), 
+            slugMatchup = first(slugMatchup),outcomeGame = first(outcomeGame),
             sum_blk = sum(blk), sum_tov = sum(tov), sum_pf = sum(pf), sum_stl = sum(stl),
-            sum_pts = sum(pts), sum_treb = sum(treb), 
+            sum_pts = sum(pts), sum_treb = sum(treb),
             sum_oreb = sum(oreb), sum_dreb = sum(dreb) ,sum_fga = sum(fga),
             sum_fgm = sum(fgm), sum_ftm = sum(ftm), sum_fta = sum(fta)) %>%
   arrange(idGame, desc(locationGame))
@@ -71,10 +71,10 @@ team_summary <- team_summary %>%
 team_summary <- team_summary %>%
   mutate(trueshooting = sum_pts/(2*(sum_fga + 0.44*sum_fta)))
 
-# now need to calculate number of possessions. This is an estimate. 
+# now need to calculate number of possessions. This is an estimate.
 # https://www.basketball-reference.com/about/glossary.html#team
 # this is called poss in the previous
-team_summary <- team_summary %>% 
+team_summary <- team_summary %>%
   mutate(poss = ifelse(locationGame == "H", 0.5*((sum_fga + 0.4*sum_fta - 1.07*(sum_oreb/(sum_oreb + lead(sum_dreb)))*(sum_fga - sum_fgm)+sum_tov)+(lead(sum_fga)+0.4*lead(sum_fta)-1.07*(lead(sum_oreb)/(lead(sum_oreb) + sum_dreb))*(lead(sum_fga)-lead(sum_fgm))+lead(sum_tov))), 0))
 
 team_summary <- team_summary %>%
@@ -86,20 +86,20 @@ team_summary <- team_summary %>%
 
 # calculate team defensive rating
 team_summary <- team_summary %>%
-  mutate(drate = ifelse(locationGame == "H", (lead(sum_pts)/poss)*100, 
+  mutate(drate = ifelse(locationGame == "H", (lead(sum_pts)/poss)*100,
                         (lag(sum_pts)/poss)*100))
 
 # let's make 0 1 for b2b
-team_summary <- team_summary %>% 
+team_summary <- team_summary %>%
   mutate(isB2BSecond = ifelse(isB2BSecond == "FALSE", 0, 1))
 
 # let's make 0 1 for W/L
-team_summary <- team_summary %>% 
+team_summary <- team_summary %>%
   mutate(outcomeGame = ifelse(outcomeGame == "W", 1, 0))
 
 # now scale blk, tov, stl, pts, treb per 100 possessions
 varsToScale <- c("sum_blk", "sum_tov", "sum_stl", "sum_pts", "sum_treb")
-team_summary <- team_summary %>% 
+team_summary <- team_summary %>%
   mutate(across(varsToScale, ~ (. / poss) * 100))
 
 # now calculate + -, which should also be by 100 possessions
@@ -147,14 +147,14 @@ design_matrix <- design_matrix[311:nrow(design_matrix),]
 design_matrix <- design_matrix %>%
   select(-avg_pts,-sum_blk, -sum_tov, -sum_stl, -sum_pts, -sum_treb,
          -trueshooting, -poss, -orate, -drate, -plu_min)
-  
+
 # let's finally take the difference of the columns
 diff_vec <- c("avg_treb", "isB2BSecond", "avg_stl", "avg_blk", "avg_tov", "avg_orate",
               "avg_drate", "avg_pl_min", "avg_true_s", "avg_win_perc")
 
 design_matrix <- design_matrix %>%
   mutate(across(diff_vec, ~(ifelse(locationGame == "H", . - lead(.), lead(.)))))
-  
+
 
 # now that we've taken the difference, we only need the H rows
 design_matrix <- design_matrix %>%
@@ -193,7 +193,7 @@ write.csv(x = design_matrix, file = paste0(wd,"/design_matrix.csv"), row.names =
 game_days <- seq(length(all_game_days))
 cumu_num_errors_lasso_vec <- cumsum(num_errors_lasso_vec)
 # Plot the line graph
-plot(game_days, cumu_num_errors_lasso_vec, type = "l", xlab = "Game Days", ylab = "Cumulative Prediction Errors", 
+plot(game_days, cumu_num_errors_lasso_vec, type = "l", xlab = "Game Days", ylab = "Cumulative Prediction Errors",
      main = "Cumulative Prediction Errors for Logistic Lasso Model Over Gamedays", mar = c(5, 5, 4, 2))
 
 ```

@@ -165,4 +165,3 @@ class NBAStatsDownloader:
         previous_game_date = with_dates.groupby("idTeam")["dateGame"].shift(1)
         is_b2b = (with_dates["dateGame"] - previous_game_date).dt.days.eq(1)
         return is_b2b.reindex(data.index).fillna(False).astype(bool)
-

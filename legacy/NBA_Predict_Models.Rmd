@@ -22,9 +22,9 @@ test_start <- which(design_matrix$slugSeason == season)[1]
 train_design_matrix <- design_matrix[1:test_start-1,]
 test_design_matrix <- design_matrix[test_start:nrow(design_matrix),]
 
-logit_model <- glm(outcomeGame ~ isB2BSecond + avg_treb + avg_stl + avg_blk + avg_tov + 
-                     avg_orate + avg_drate + avg_true_s + avg_win_perc + avg_pl_min, 
-                   data = train_design_matrix, family = 
+logit_model <- glm(outcomeGame ~ isB2BSecond + avg_treb + avg_stl + avg_blk + avg_tov +
+                     avg_orate + avg_drate + avg_true_s + avg_win_perc + avg_pl_min,
+                   data = train_design_matrix, family =
                      binomial(link="logit"))
 
 summary(logit_model)
@@ -59,44 +59,44 @@ num_errors_log_vec <- vector(mode = "numeric", length = length(all_game_days))
 
 # function to return a confusion matrix for all predictions on date with model refit to each new game day
 make_day_predictions <- function(data, date) {
-  
+
   test_start <- which(data$dateGame == date)[1]
   test_end <- tail(which(data$dateGame == date), n=1)
   train_end <- test_start - 1
-  
+
   train_design_matrix <- data[1:train_end,]
   test_design_matrix <- data[test_start:test_end,]
-  
-  logistic_model <- glm(outcomeGame ~ isB2BSecond + avg_treb + avg_stl + avg_blk + avg_tov + 
-                     avg_orate + avg_drate + avg_true_s + avg_win_perc, 
-                   data = train_design_matrix, family = 
+
+  logistic_model <- glm(outcomeGame ~ isB2BSecond + avg_treb + avg_stl + avg_blk + avg_tov +
+                     avg_orate + avg_drate + avg_true_s + avg_win_perc,
+                   data = train_design_matrix, family =
                      binomial(link="logit"))
-  
-  x_test <- test_design_matrix %>% 
+
+  x_test <- test_design_matrix %>%
     select(-slugSeason, -dateGame, -outcomeGame)
-  
+
   y_test <- test_design_matrix %>%
     select(outcomeGame)
-  
+
   predicted_probs <- predict(logistic_model, newdata = x_test, type = "response")
   predicted_outcomes <- ifelse(predicted_probs > 0.5, 1, 0)
-  
+
   y_test_vec <- y_test$outcomeGame
-  
+
   # number errors
   num_errors_log <- sum(predicted_outcomes != y_test_vec)
-  
-  confusion_matrix <- table(factor(y_test_vec, levels = c(0, 1)), 
+
+  confusion_matrix <- table(factor(y_test_vec, levels = c(0, 1)),
                             factor(predicted_outcomes, levels = c(0, 1)),
                             dnn = c("Actual", "Predicted"))
-  
+
   rownames(confusion_matrix) <- c("0", "1")
   colnames(confusion_matrix) <- c("0", "1")
-  
+
   confusion_matrix_matrix <- as.matrix(confusion_matrix)
-  
+
   return_list <- list(confusion_matrix_matrix, num_errors_log)
-  
+
   return(return_list)
 }
 
@@ -128,7 +128,7 @@ See how errors add up over time.
 game_days <- seq(length(all_game_days))
 cumu_num_errors_log_vec <- cumsum(num_errors_log_vec)
 # Plot the line graph
-plot(game_days, cumu_num_errors_log_vec, type = "l", xlab = "Game Days", ylab = "Cumulative Prediction Errors", 
+plot(game_days, cumu_num_errors_log_vec, type = "l", xlab = "Game Days", ylab = "Cumulative Prediction Errors",
      main = "Cumulative Prediction Errors for Logistic Model", mar = c(5, 5, 4, 2))
 
 ```
@@ -140,7 +140,7 @@ library(glmnet)
 
 x_train <- train_design_matrix %>%
   select(-slugSeason, -dateGame, -outcomeGame)
-  
+
 y_train <- train_design_matrix %>%
   select(outcomeGame)
 
@@ -155,7 +155,7 @@ cv_fit_ridge <- cv.glmnet(x_train, y_train, family = "binomial", alpha = 0, nfol
 best_lambda_ridge <- cv_fit_ridge$lambda.min
 
 # Fit ridge logistic regression model using the best lambda
-ridge_logistic_regression <- glmnet(x_train, y_train, family = "binomial", 
+ridge_logistic_regression <- glmnet(x_train, y_train, family = "binomial",
                                     alpha = 0, lambda = best_lambda_ridge)
 
 # Coefficients
@@ -179,54 +179,54 @@ accuracy_log_ridge
 ```{r}
 # function to return a confusion matrix for all predictions on date with model refit to each new game day
 make_day_predictions_ridge <- function(data, date) {
-  
+
   test_start <- which(data$dateGame == date)[1]
   test_end <- tail(which(data$dateGame == date), n=1)
   train_end <- test_start - 1
-  
+
   train_design_matrix <- data[1:train_end,]
   test_design_matrix <- data[test_start:test_end,]
-  
+
   x_train <- train_design_matrix %>%
   select(-slugSeason, -dateGame, -outcomeGame)
-  
+
   y_train <- train_design_matrix %>%
     select(outcomeGame)
-  
+
   # Convert every column to numeric
   x_train <- as.matrix(data.frame(lapply(x_train, function(x) as.numeric(as.character(x)))))
   y_train <- as.numeric(y_train$outcomeGame)
-  
+
   # Perform cross-validation to find the best lambda value for ridge
   cv_fit_ridge <- cv.glmnet(x_train, y_train, family = "binomial", alpha = 0, nfolds = 10)
-  
+
   # Best lambda value
   best_lambda_ridge <- cv_fit_ridge$lambda.min
-  
+
   # Fit ridge logistic regression model using the best lambda
-  ridge_logistic_regression <- glmnet(x_train, y_train, family = "binomial", 
+  ridge_logistic_regression <- glmnet(x_train, y_train, family = "binomial",
                                       alpha = 0, lambda = best_lambda_ridge)
-  
-  x_test <- test_design_matrix %>% 
+
+  x_test <- test_design_matrix %>%
     select(-slugSeason, -dateGame, -outcomeGame)
-  
+
   y_test <- test_design_matrix %>%
     select(outcomeGame)
-  
+
   predicted_probs <- predict(ridge_logistic_regression, newx = as.matrix(x_test), type = "response")
   predicted_outcomes <- ifelse(predicted_probs > 0.5, 1, 0)
-  
+
   y_test_vec <- y_test$outcomeGame
-  
-  confusion_matrix <- table(factor(y_test_vec, levels = c(0, 1)), 
+
+  confusion_matrix <- table(factor(y_test_vec, levels = c(0, 1)),
                             factor(predicted_outcomes, levels = c(0, 1)),
                             dnn = c("Actual", "Predicted"))
-  
+
   rownames(confusion_matrix) <- c("0", "1")
   colnames(confusion_matrix) <- c("0", "1")
-  
+
   confusion_matrix_matrix <- as.matrix(confusion_matrix)
-  
+
   return(confusion_matrix_matrix)
 }
 
@@ -235,9 +235,9 @@ ridge_confusion_matrix_list <- vector("list", length = length(unique(design_matr
 
 # loop through all game days using our design matrix, creating list of confusion matrices for 2022-2023
 for (i in 1:length(all_game_days)) {
-  
+
   ridge_confusion_matrix_list[[i]] <- make_day_predictions_ridge(design_matrix, all_game_days[i])
-  
+
 }
 
 ridge_confusion_mat_sum <- Reduce('+', ridge_confusion_matrix_list)
@@ -264,7 +264,7 @@ cv_fit_lasso <- cv.glmnet(x_train, y_train, family = "binomial", alpha = 1, nfol
 best_lambda_lasso <- cv_fit_lasso$lambda.min
 
 # Fit ridge logistic regression model using the best lambda
-lasso_logistic_regression <- glmnet(x_train, y_train, family = "binomial", 
+lasso_logistic_regression <- glmnet(x_train, y_train, family = "binomial",
                                     alpha = 1, lambda = best_lambda_lasso)
 
 # Coefficients
@@ -291,59 +291,59 @@ accuracy_log_lasso
 num_errors_lasso_vec <- vector(mode = "numeric", length = length(all_game_days))
 
 make_day_predictions_lasso <- function(data, date) {
-  
+
   test_start <- which(data$dateGame == date)[1]
   test_end <- tail(which(data$dateGame == date), n=1)
   train_end <- test_start - 1
-  
+
   train_design_matrix <- data[1:train_end,]
   test_design_matrix <- data[test_start:test_end,]
-  
+
   x_train <- train_design_matrix %>%
   select(-slugSeason, -dateGame, -outcomeGame)
-  
+
   y_train <- train_design_matrix %>%
     select(outcomeGame)
-  
+
   # Convert every column to numeric
   x_train <- as.matrix(data.frame(lapply(x_train, function(x) as.numeric(as.character(x)))))
   y_train <- as.numeric(y_train$outcomeGame)
-  
+
   # Perform cross-validation to find the best lambda value for lasso
   cv_fit_lasso <- cv.glmnet(x_train, y_train, family = "binomial", alpha = 1, nfolds = 10)
-  
+
   # Best lambda value
   best_lambda_lasso <- cv_fit_lasso$lambda.min
-  
+
   # Fit lasso logistic regression model using the best lambda
-  lasso_logistic_regression <- glmnet(x_train, y_train, family = "binomial", 
+  lasso_logistic_regression <- glmnet(x_train, y_train, family = "binomial",
                                       alpha = 0, lambda = best_lambda_lasso)
-  
-  x_test <- test_design_matrix %>% 
+
+  x_test <- test_design_matrix %>%
     select(-slugSeason, -dateGame, -outcomeGame)
-  
+
   y_test <- test_design_matrix %>%
     select(outcomeGame)
-  
+
   predicted_probs <- predict(lasso_logistic_regression, newx = as.matrix(x_test), type = "response")
   predicted_outcomes <- ifelse(predicted_probs > 0.5, 1, 0)
-  
+
   y_test_vec <- y_test$outcomeGame
-  
+
   # number errors
   num_errors_lasso <- sum(predicted_outcomes != y_test_vec)
-  
-  confusion_matrix <- table(factor(y_test_vec, levels = c(0, 1)), 
+
+  confusion_matrix <- table(factor(y_test_vec, levels = c(0, 1)),
                             factor(predicted_outcomes, levels = c(0, 1)),
                             dnn = c("Actual", "Predicted"))
-  
+
   rownames(confusion_matrix) <- c("0", "1")
   colnames(confusion_matrix) <- c("0", "1")
-  
+
   confusion_matrix_matrix <- as.matrix(confusion_matrix)
-  
+
   return_list <- list(confusion_matrix_matrix, num_errors_lasso)
-  
+
   return(return_list)
 }
 
@@ -373,9 +373,9 @@ melted_data <- melt(lasso_confusion_mat, id.vars = "Predicted_Labels")
 names(melted_data) <- c("Predicted Labels", "True Labels", "Count")
 
 # Create the heatmap
-ggplot(data = melted_data, aes(x = `Predicted Labels`, y = `True Labels`, fill = Count)) + 
+ggplot(data = melted_data, aes(x = `Predicted Labels`, y = `True Labels`, fill = Count)) +
   geom_tile() +
-  geom_text(aes(label = Count), color = "black", size = 5) + 
+  geom_text(aes(label = Count), color = "black", size = 5) +
   scale_fill_gradient(low = "white", high = "steelblue") +
   theme_minimal() +
   labs(title = "Heatmap of Predictions vs True Labels For Lasso Model", x = "Predicted Labels", y = "True Labels") +
@@ -402,8 +402,8 @@ test_start <- which(design_matrix$slugSeason == season)[1]
 train_design_matrix <- design_matrix[1:test_start-1,]
 test_design_matrix <- design_matrix[test_start:nrow(design_matrix),]
 
-logit_model_inference <- glm(outcomeGame ~ isB2BSecond + avg_treb + avg_stl + avg_blk + avg_tov + 
-                     avg_orate + avg_drate + avg_true_s , data = train_design_matrix, family = 
+logit_model_inference <- glm(outcomeGame ~ isB2BSecond + avg_treb + avg_stl + avg_blk + avg_tov +
+                     avg_orate + avg_drate + avg_true_s , data = train_design_matrix, family =
                      binomial(link="logit"))
 
 summary(logit_model_inference)
@@ -436,51 +436,51 @@ library(stargazer)
 library(lmtest)
 # function to return a confusion matrix for all predictions on date with model refit to each new game day
 make_day_predictions_inf <- function(data, date, i) {
-  
+
   test_start <- which(data$dateGame == date)[1]
   test_end <- tail(which(data$dateGame == date), n=1)
   train_end <- test_start - 1
-  
+
   train_design_matrix <- data[1:train_end,]
   test_design_matrix <- data[test_start:test_end,]
-  
-  logistic_model <- glm(outcomeGame ~ isB2BSecond + avg_treb + avg_stl + avg_blk + avg_tov + 
-                     avg_orate + avg_drate + avg_true_s, 
-                   data = train_design_matrix, family = 
+
+  logistic_model <- glm(outcomeGame ~ isB2BSecond + avg_treb + avg_stl + avg_blk + avg_tov +
+                     avg_orate + avg_drate + avg_true_s,
+                   data = train_design_matrix, family =
                      binomial(link="logit"))
-  
+
   if (i == 1){
-    stargazer(logistic_model, align = T, single.row = T, type="latex", 
+    stargazer(logistic_model, align = T, single.row = T, type="latex",
               out="log_first_results.tex")
   }else if(i == 164) {
-    stargazer(logistic_model, align = T, single.row = T, type="latex", 
+    stargazer(logistic_model, align = T, single.row = T, type="latex",
               out="log_last_results.tex")
   }
-  
-  x_test <- test_design_matrix %>% 
+
+  x_test <- test_design_matrix %>%
     select(-slugSeason, -dateGame, -outcomeGame)
-  
+
   y_test <- test_design_matrix %>%
     select(outcomeGame)
-  
+
   predicted_probs <- predict(logistic_model, newdata = x_test, type = "response")
   predicted_outcomes <- ifelse(predicted_probs > 0.5, 1, 0)
-  
+
   y_test_vec <- y_test$outcomeGame
-  
+
   # number errors
   num_errors_log_inf <- sum(predicted_outcomes != y_test_vec)
-  
-  confusion_matrix <- table(factor(y_test_vec, levels = c(0, 1)), 
+
+  confusion_matrix <- table(factor(y_test_vec, levels = c(0, 1)),
                             factor(predicted_outcomes, levels = c(0, 1)),
                             dnn = c("Actual", "Predicted"))
-  
+
   rownames(confusion_matrix) <- c("0", "1")
   colnames(confusion_matrix) <- c("0", "1")
-  
+
   confusion_matrix_matrix <- as.matrix(confusion_matrix)
   return_list <- list(confusion_matrix_matrix, num_errors_log_inf)
-  
+
   return(return_list)
 }
 
@@ -515,7 +515,7 @@ inf_accuracy
 ```{r}
 cumu_num_errors_loginf_vec <- cumsum(num_errors_loginf_vec)
 # Plot the line graph
-plot(game_days, cumu_num_errors_loginf_vec, type = "l", xlab = "Game Days", ylab = "Cumulative Prediction Errors", 
+plot(game_days, cumu_num_errors_loginf_vec, type = "l", xlab = "Game Days", ylab = "Cumulative Prediction Errors",
      main = "Cumulative Prediction Errors for Logistic Model Over Gamedays", mar = c(5, 5, 4, 2))
 
 ```
@@ -534,9 +534,9 @@ library(randomForest)
 # Convert outcomeGame to factor or binary variable
 train_design_matrix$outcomeGame <- as.factor(train_design_matrix$outcomeGame)
 
-rf_model <- randomForest(outcomeGame ~ isB2BSecond + avg_treb + avg_stl + avg_blk + avg_tov + 
-                     avg_orate + avg_drate + avg_true_s + avg_win_perc, 
-                   data = train_design_matrix) 
+rf_model <- randomForest(outcomeGame ~ isB2BSecond + avg_treb + avg_stl + avg_blk + avg_tov +
+                     avg_orate + avg_drate + avg_true_s + avg_win_perc,
+                   data = train_design_matrix)
 
 rf_predictions <- predict(rf_model, x_test)
 
@@ -553,8 +553,8 @@ cat("Random Forest Accuracy: ", accuracy_rf)
 # random forest model
 set.seed(254)
 library(randomForest)
-rf_model <- randomForest(outcomeGame ~ isB2BSecond + avg_win_perc, 
-                   data = train_design_matrix) 
+rf_model <- randomForest(outcomeGame ~ isB2BSecond + avg_win_perc,
+                   data = train_design_matrix)
 
 rf_predictions <- predict(rf_model, x_test)
 
@@ -578,20 +578,20 @@ library(xgboost)
 
 train_data <- train_design_matrix %>%
   select(-slugSeason, -dateGame)
-  
+
 
 test_data <- test_design_matrix %>%
   select(-slugSeason, -dateGame)
 
 # Convert the data to a suitable format for xgboost
-train_matrix <- xgb.DMatrix(data = as.matrix(train_data[, -which(names(train_data) == "outcomeGame")]), 
+train_matrix <- xgb.DMatrix(data = as.matrix(train_data[, -which(names(train_data) == "outcomeGame")]),
                             label = train_data$outcomeGame)
-test_matrix <- xgb.DMatrix(data = as.matrix(test_data[, -which(names(test_data) == "outcomeGame")]), 
+test_matrix <- xgb.DMatrix(data = as.matrix(test_data[, -which(names(test_data) == "outcomeGame")]),
                            label = test_data$outcomeGame)
 
 # set params for xgboost model
 params <- list(
-  objective = "binary:logistic", 
+  objective = "binary:logistic",
   eval_metric = "error",
   max_depth = 6,
   eta = 0.3,
@@ -634,7 +634,7 @@ test_data$outcomeGame <- as.factor(test_data$outcomeGame)
 
 train_control <- trainControl(method="repeatedcv", number=10, repeats=3)
 
-nb_model <- train(outcomeGame~., data=train_data, trControl=train_control, 
+nb_model <- train(outcomeGame~., data=train_data, trControl=train_control,
                   method="naive_bayes")
 
 nb_predictions <- nb_model %>% predict(test_data[,-2])
@@ -654,12 +654,12 @@ cl <- makeCluster(detectCores() - 2)
 registerDoParallel(cl)
 
 # Define the parameter grid for the SVM model
-parameter_grid <- expand.grid(gamma = 10^seq(-5,5, length.out = 20), 
+parameter_grid <- expand.grid(gamma = 10^seq(-5,5, length.out = 20),
                               cost = 10^seq(-5,5, length.out = 20))
 
 # run tune.svm in parallel
 svm_results_radial <- foreach(i = 1:nrow(parameter_grid), .packages = c("e1071")) %dopar% {
-  tune.svm(outcomeGame ~ ., data = train_data, kernel = "radial", gamma = parameter_grid[i,"gamma"], 
+  tune.svm(outcomeGame ~ ., data = train_data, kernel = "radial", gamma = parameter_grid[i,"gamma"],
            cost = parameter_grid[i,"cost"], metric = 'accuracy',
            tunecontrol = tune.control(cross = 10))
 }

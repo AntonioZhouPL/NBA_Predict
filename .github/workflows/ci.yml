@@ -38,6 +38,9 @@ jobs:
       - name: Run linter
         run: python -m ruff check src tests
 
+      - name: Build Sphinx documentation
+        run: make docs PYTHON=python
+
   docker:
     name: Docker reproducibility check
     runs-on: ubuntu-latest
