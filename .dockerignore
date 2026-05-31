@@ -18,6 +18,8 @@ outputs/metrics/*
 outputs/models/*
 outputs/predictions/*
 
+docs/_build
+report/generated
 report/_site
 report/.quarto
 _site
